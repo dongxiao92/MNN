@@ -466,6 +466,7 @@ void Matrix::setConcat(const Matrix& a, const Matrix& b) {
     } else {
         Matrix tmp;
 
+        //what's the difference between a ordinary matrix mul?
         if ((aType | bType) & kPerspective_Mask) {
             tmp.fMat[kMScaleX] = rowcol3(&a.fMat[0], &b.fMat[0]);
             tmp.fMat[kMSkewX]  = rowcol3(&a.fMat[0], &b.fMat[1]);

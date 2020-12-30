@@ -206,6 +206,7 @@ static void _bgra2gray(const unsigned char* source, unsigned char* dest, size_t 
         auto bC = vdup_n_u8(7);
         for (int i = 0; i < countD8; ++i) {
             auto rgb   = vld4_u8(source + 32 * i);
+            //dongxiao:what's the intermediate result data type?
             auto res   = vmull_u8(rC, rgb.val[2]) + vmull_u8(gC, rgb.val[1]) + vmull_u8(bC, rgb.val[0]);
             auto resU8 = vshrn_n_u16(res, 6);
             vst1_u8(dest + 8 * i, resU8);
