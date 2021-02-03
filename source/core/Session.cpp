@@ -40,7 +40,9 @@ Session::Session(const Schedule::ScheduleInfo& info) {
     }
 
     mTensors = info.allTensors;
+    // pipelineInfp: {backend: vector<Schedule::PipelineInfo>}
     for (auto& iter : info.pipelineInfo) {
+        // devandong: create backend here
         if (mBackends.find(iter.first.type) == mBackends.end()) {
             auto newBn = BackendFactory::create(iter.first);
             if (nullptr == newBn) {
@@ -84,6 +86,7 @@ Session::Session(const Schedule::ScheduleInfo& info) {
             MNN_PRINT("\n[MNNInfo]:*************set armv82 backend*************\n");
         }
 #endif
+        // devandong: store each PipelineInfo with backend
         std::shared_ptr<Pipeline> newPipeline(new Pipeline(iter.second, backend, cpuBackend));
         mPipelines.emplace_back(std::move(newPipeline));
     }
@@ -105,12 +108,16 @@ ErrorCode Session::run() const {
         MNN_ERROR("Can't run session because not resized\n");
         return COMPUTE_SIZE_ERROR;
     }
+    // devandong:
+    size_t kPipelines = 0;
     for (auto& iter : mPipelines) {
+        kPipelines += 1;
         auto error = iter->execute();
         if (NO_ERROR != error) {
             return error;
         }
     }
+    //printf("\n===== total %ld pipelines \n", kPipelines);
     return NO_ERROR;
 }
 
@@ -155,6 +162,7 @@ ErrorCode Session::resize() {
     }
 
     for (auto& iter : mPipelines) {
+        //devan: for metal, memory allocation happens here
         auto error = iter->prepare();
         if (NO_ERROR != error) {
             return error;

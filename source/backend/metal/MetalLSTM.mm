@@ -31,6 +31,7 @@ ErrorCode MetalLSTM::onResize(const std::vector<Tensor *> &inputs, const std::ve
     auto iw      = input->width();
     auto ow      = output->width();
     auto size    = weightI->dims()->data()[0];
+    // devandong: united: all weights are stored in weightI
     auto united  = weightI && !weightH && size == 4 * ow * (iw + ow + 2);
     if (united) {
         auto data = weightI->float32s()->data();

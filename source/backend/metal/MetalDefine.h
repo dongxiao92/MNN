@@ -29,7 +29,7 @@
 #endif
 
 #define MNN_METAL_BENCHMARK 0
-#define MNN_METAL_FULL_PRECISION 0 // should edit in metal too
+#define MNN_METAL_FULL_PRECISION 1 // should edit in metal too
 
 #if MNN_METAL_FULL_PRECISION || !defined(__FLT16_EPSILON__)
 typedef float metal_float;
@@ -37,6 +37,14 @@ typedef float metal_float;
 #else
 typedef __fp16 metal_float;
 #define MNNMetalPixelFormatRGBAFloat MTLPixelFormatRGBA16Float
+#endif
+
+#if DEBUG
+static_assert(0);
+#endif
+
+#if MNN_METAL_DEBUG
+static_assert(0);
 #endif
 
 #endif /* MetalDefine_h */

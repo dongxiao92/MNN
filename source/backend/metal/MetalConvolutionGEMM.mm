@@ -26,6 +26,7 @@ bool MetalConvolutionGEMM::isValid(const Convolution2D *conv, const Tensor *inpu
     if (oc <= 64) {
         return false;
     }
+    // devandong: the input is large enough
     auto iw = input->width(), ih = input->height(), ic = input->channel();
     if (iw * ih * ic <= 16384) {
         return false;
@@ -36,6 +37,7 @@ bool MetalConvolutionGEMM::isValid(const Convolution2D *conv, const Tensor *inpu
         return false;
     }
 
+    // devandong: tmp input & output do not occupy too much
     auto unit = conv->quanParameter() != nullptr ? sizeof(float) : sizeof(metal_float);
     auto iz = UP_DIV(ic, 4), oz = UP_DIV(oc, 4), batch = input->batch();
     return UP_DIV(ow * oh * batch, 4) * kx * ky * iz * 16 * sizeof(metal_float) < (2 << 20) &&  // tmp input

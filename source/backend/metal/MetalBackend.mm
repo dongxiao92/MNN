@@ -34,6 +34,9 @@ void MetalBackend::addCreator(OpType t, Creator *c) {
 }
 
 MetalBackend::MetalBackend() : Backend(MNN_FORWARD_METAL) {
+#if MNN_DEBUG
+    static_assert(0);
+#endif
     mContext = (__bridge_retained void *)[[MNNMetalContext alloc] init];
 }
 MetalBackend::~MetalBackend() {
@@ -175,6 +178,8 @@ void MetalBackend::onExecuteBegin() const {
 void MetalBackend::onExecuteEnd() const {
     auto context = (__bridge MNNMetalContext *)mContext;
     [context commit];
+    //devandong
+    [context wait];
 }
 bool MetalBackend::onWaitFinish() {
     auto context = (__bridge MNNMetalContext *)mContext;

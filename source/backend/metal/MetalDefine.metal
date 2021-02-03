@@ -20,7 +20,7 @@ using namespace metal;
 
 #define UP_DIV(x, y)    ( ((x) + (y) - 1) / (y) )
 #define ROUND_UP(x, y)  ( ((x) + (y) - 1) / (y) * (y) )
-#define MNN_METAL_FULL_PRECISION 0 // should edit in .h too
+#define MNN_METAL_FULL_PRECISION 1 // should edit in .h too
 
 #if MNN_METAL_FULL_PRECISION
 typedef float    ftype;

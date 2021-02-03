@@ -66,8 +66,11 @@ bool Pipeline::Unit::_allocTensors(Backend* bn, const std::vector<Tensor*>& tens
         if (nullptr != des->backend) {
             continue;
         }
+        // devan: bind tensor with bn here
         des->backend = bn;
+        // starting from the inner-most dim, contiginously
         TensorUtils::setLinearLayout(t);
+        // allocate memory here
         auto success = bn->onAcquireBuffer(t, _getTensorStorageType(t));
         if (!success) {
             return false;
@@ -94,13 +97,16 @@ Pipeline::Unit::Unit(const Op* op, const std::vector<Tensor*>& inputs, const std
 
 
 bool Pipeline::Unit::_createExecution(Backend* bn, Backend* cpuBn) {
+    // devandong: try to execute on the bn
     mExecution.reset(bn->onCreate(mInputs, mOutputs, mOriginOp));
     if (nullptr == mExecution) {
+        // devandong: if failing, try cpu backend
         mExecution.reset(cpuBn->onCreate(mInputs, mOutputs, mOriginOp));
     }
     if (nullptr == mExecution) {
         return false;
     }
+    // devandong: check if we need to insert wrap to connect ops on different backend
     bool needWrap = false;
 
     auto executionBackend = mExecution->backend();
@@ -126,7 +132,8 @@ ErrorCode Pipeline::Unit::execute() {
     if (mConst) {
         return NO_ERROR;
     }
-    // MNN_PRINT("\t==> execute op: %s, [%s]\n", mContent->name.c_str(), mContent->type.c_str());
+    // devandong:
+    //MNN_PRINT("\t==> execute op: %s, [%s]\n", mContent->name.c_str(), mContent->type.c_str());
     auto code = mExecution->onExecute(mInputs, mOutputs);
     if (NO_ERROR != code) {
         MNN_ERROR("Execute Error for [%s], %s, code=%d\n", MNN::EnumNameOpType(mOriginOp->type()), mContent->name.c_str(), code);
@@ -328,6 +335,8 @@ ErrorCode Pipeline::prepare() {
 
 ErrorCode Pipeline::execute() {
     mBackend->onExecuteBegin();
+    //devandong
+    //printf("\n===== total %ld units\n", mUnits.size());
     for (int i=0; i<mUnits.size(); ++i) {
         auto& u = mUnits[i];
         auto code = u->execute();

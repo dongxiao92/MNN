@@ -127,6 +127,7 @@ static bool _setUpTensorInfo(std::vector<std::shared_ptr<Tensor>>& allTensors, c
     auto& tensors = allTensors;
     tensors.resize(net->tensorName()->size());
     for (int i = 0; i < tensors.size(); ++i) {
+        // devandong: tensor is allocated here
         tensors[i].reset(new Tensor(4)); // NCHW, TODO
         tensors[i]->setType(DataType_DT_FLOAT);
     }
@@ -295,6 +296,7 @@ static vector<Schedule::PipelineInfo> _scheduleUnit(const Net* net, const Schedu
                                                     const vector<shared_ptr<Tensor>>& allTensors) {
     vector<Schedule::PipelineInfo> oplists;
     vector<const Op*> ops;
+    // devandong: if we donot set ScheduleConfig.path.inputs/outputs, then each op in net will be a op in ops.
     generateScheduleGraph(ops, net, configs, allTensors);
     for (const Op* op : ops) {
         Schedule::PipelineInfo opInfo;
@@ -325,6 +327,7 @@ Schedule::ScheduleInfo Schedule::schedule(const Net* net, const std::vector<Sche
         MNN_PRINT("Error net for schedule\n");
         return schedule;
     }
+    // devandong: valid depends on the content of net
     bool valid = _setUpTensorInfo(allTensors, net);
     schedule.validForResize = valid;
 
@@ -332,6 +335,8 @@ Schedule::ScheduleInfo Schedule::schedule(const Net* net, const std::vector<Sche
 
     for (auto& config : configs) {
         Backend::Info compute;
+        // devandong: if set config.type==TNN_FORWARD_AUTO, the follwoing line will profiling all backends,
+        // and choose the one with the lowest acculative op time.
         compute.type      = _getApprociateType(config, net, allTensors, valid);
         compute.numThread = config.numThread;
         compute.user      = config.backendConfig;
@@ -370,17 +375,21 @@ Schedule::ScheduleInfo Schedule::schedule(const Net* net, const std::vector<Sche
     }
 
     // Get All Output and Input
-    std::set<int> inputIndexDiff;
-    std::set<int> outputIndexesDiff;
+    std::set<int> inputIndexDiff;       // indices which are in input but not in output
+    std::set<int> outputIndexesDiff;    // indices which are in output but not in input
     std::set_difference(outputIndexes.begin(), outputIndexes.end(), inputIndexes.begin(), inputIndexes.end(),
                         std::inserter(outputIndexesDiff, outputIndexesDiff.begin()));
     std::set_difference(inputIndexes.begin(), inputIndexes.end(), outputIndexes.begin(), outputIndexes.end(),
                         std::inserter(inputIndexDiff, inputIndexDiff.begin()));
 
+    // devandong: net from flatbuffer actually contains all tensor names
+    // {{tensor_name: tensor_idx}}
     std::unordered_map<std::string, int> tensorNameIndexMap;
     for (int i = 0; i < net->tensorName()->size(); ++i) {
         tensorNameIndexMap[net->tensorName()->Get(i)->str()] = i;
     }
+    // devandong: Users can add output tensor through config.saveTensors
+    // append config.saveTensors to output
     for (auto& config : configs) {
         for (const auto& name : config.saveTensors) {
             if (tensorNameIndexMap.count(name)) {
@@ -390,6 +399,7 @@ Schedule::ScheduleInfo Schedule::schedule(const Net* net, const std::vector<Sche
             }
         }
     }
+    // devandong: net->outputName will also be appended to output
     if (net->outputName()) {
         for (int i = 0; i < net->outputName()->size(); ++i) {
             std::string name = net->outputName()->Get(i)->str();
@@ -408,6 +418,7 @@ Schedule::ScheduleInfo Schedule::schedule(const Net* net, const std::vector<Sche
             std::make_pair(net->tensorName()->GetAsString(index)->c_str(), allTensors[index].get()));
     }
 
+    // devandong: schedule.allTensors: {{use_cnt: shared_ptr<Tensor>}}
     for (auto& t : allTensors) {
         schedule.allTensors.emplace_back(std::make_pair(0, std::move(t)));
     }
@@ -426,6 +437,7 @@ Schedule::ScheduleInfo Schedule::schedule(const Net* net, const std::vector<Sche
         TensorUtils::getDescribe(schedule.allTensors[outputIndex].second.get())->usage = TensorUsage::OUTPUT;
         schedule.allTensors[outputIndex].first += 1;
     }
+    // devandong: schedule.allTensors holds the shared_ptr of tensor
     return schedule;
 }
 } // namespace MNN

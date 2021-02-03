@@ -37,6 +37,7 @@ void TensorUtils::setLinearLayout(Tensor* tensor) {
         auto index  = buffer.dimensions - i - 1;
         auto extent = buffer.dim[index].extent;
         if (1 == index && tensor->mDescribe->dimensionFormat == MNN_DATA_FORMAT_NC4HW4) {
+            // devandong: handle the C4 padding until the real allocation happens
             extent = ROUND_UP(extent, 4);
         }
         buffer.dim[index].stride = size;
